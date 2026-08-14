@@ -1,6 +1,8 @@
 """
-Christ University — Smart Gate Compliance & Access Monitor
-Streamlit Dashboard with Live Camera Feed & Accessibility Features
+🎓 CHRIST (Deemed to be University)
+🛡️ SENTINEL - Automated Gate Compliance Interface
+
+[FUTURISTIC HUD EDITION]
 
 Run:
     streamlit run app.py
@@ -18,11 +20,12 @@ import streamlit as st
 
 from src.compliance_engine import ComplianceEngine
 
-# --- Page Setup & Accessibility Config ---
+# --- Page & HUD Setup ---
 st.set_page_config(
-    page_title="Christ University — Gate Compliance Monitor",
-    page_icon="🎓",
-    layout="wide"
+    page_title="SENTINEL // Gate Monitor",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,150 +33,235 @@ SAMPLE_CARDS_DIR = os.path.join(BASE_DIR, "data", "sample_id_cards")
 OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
-# Custom Styling for Accessibility & College Theme
-st.markdown("""
+# =========================================================
+# --- Advanced CSS Injection for Futuristic HUD Theme ---
+# =========================================================
+st.markdown(f"""
     <style>
-    .main-header {
-        background-color: #0d233a;
-        padding: 1.2rem 2rem;
-        border-radius: 10px;
-        color: white;
-        margin-bottom: 1rem;
-    }
-    .main-header h1 { color: #ffffff; margin: 0; font-size: 2.2rem; }
-    .main-header p { color: #d0e1f9; margin: 0; font-size: 1rem; }
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
+
+    /* --- Core Page Overrides --- */
+    .stApp {{
+        background: radial-gradient(circle, #10192a 0%, #060912 100%);
+        color: #e0f2fe;
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+    }}
     
-    /* High-contrast status badges for accessibility */
-    .status-granted {
-        background-color: #1e7e34;
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        font-size: 1.5rem;
+    /* Permanent Scanline Overlay Effect */
+    .stApp::before {{
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        background-size: 100% 4px, 3px 100%;
+        z-idex: 2;
+        pointer-events: none;
+        opacity: 0.3;
+    }}
+
+    /* --- Glowing Sidebar --- */
+    [data-testid="stSidebar"] {{
+        background-color: #04060b;
+        border-right: 2px solid #00f2fe;
+        box-shadow: 5px 0px 15px rgba(0, 242, 254, 0.2);
+    }}
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {{
+        color: #00f2fe;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-shadow: 0 0 10px #00f2fe;
+    }}
+
+    /* --- HUD Styling for Content Panels (Glassmorphism + Neon) --- */
+    [data-testid="stVerticalBlock"] > div > div[data-testid="stVerticalBlock"] {{
+        background: rgba(16, 25, 42, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 242, 254, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+    }}
+
+    /* --- Status Highlighting --- */
+    .stAlert {{
+        background-color: rgba(6, 9, 18, 0.8) !important;
+        border-radius: 5px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+    }}
+    /* Access Granted (Green Luminous) */
+    .stAlert[data-baseweb="notification"] > div:first-child {{
+        border: 2px solid #0f0;
+        box-shadow: 0 0 10px #0f0;
+        color: #0f0;
+        background-color: rgba(0, 50, 0, 0.5);
+    }}
+    /* Access Denied (Red Luminous) */
+    .stAlert[data-baseweb="notification"][class*="st-emotion-cache"] > div:first-child {{
+        border: 2px solid #f00;
+        box-shadow: 0 0 10px #f00;
+        color: #f00;
+        background-color: rgba(50, 0, 0, 0.5);
+    }}
+
+    /* --- Futurisitc Buttons --- */
+    .stButton > button {{
+        background: transparent !important;
+        color: #00f2fe !important;
+        border: 2px solid #00f2fe !important;
+        border-radius: 5px !important;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 5px rgba(0, 242, 254, 0.5);
+    }}
+    .stButton > button:hover {{
+        background: #00f2fe !important;
+        color: #060912 !important;
+        box-shadow: 0 0 20px #00f2fe;
+    }}
+
+    /* --- Header Title (Holographic Glitch Effect) --- */
+    .hologram-title {{
+        color: #fff;
+        font-size: 3rem;
         font-weight: bold;
         text-align: center;
-        margin-bottom: 10px;
-    }
-    .status-denied {
-        background-color: #bd2130;
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        font-size: 1.5rem;
-        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        position: relative;
+        text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe, 0 0 30px #00f2fe;
+        animation: glitch 3s infinite;
+    }}
+    .sub-title {{
+        color: #00f2fe;
         text-align: center;
-        margin-bottom: 10px;
-    }
+        font-size: 1rem;
+        margin-top: -10px;
+        margin-bottom: 30px;
+        opacity: 0.8;
+    }}
+
+    @keyframes glitch {{
+        0% {{ text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe; }}
+        2% {{ text-shadow: 2px 0 red, -2px 0 blue; }}
+        4% {{ text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe; }}
+        98% {{ text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe; }}
+        100% {{ text-shadow: -2px 0 red, 2px 0 blue; }}
+    }}
     </style>
 """, unsafe_allow_html=True)
 
-# Audio Text-to-Speech Helper for Accessibility
+# Audio Text-to-Speech Helper (Retained for accessibility)
 def speak_alert(text):
     clean_text = text.replace("'", "").replace('"', '')
     js_code = f"""
         <script>
             var msg = new SpeechSynthesisUtterance('{clean_text}');
+            msg.rate = 0.9; // Slightly slower, more bureaucratic voice
             window.speechSynthesis.speak(msg);
         </script>
     """
     st.components.v1.html(js_code, height=0)
 
+# =========================================================
+# --- Main Interface Content (HUD Panels) ---
+# =========================================================
+
 # --- Header Banner ---
-st.markdown("""
-    <div class="main-header">
-        <h1>🎓 CHRIST (Deemed to be University)</h1>
-        <p>Smart Security & Automated Gate Compliance System | Live Feed & AI Monitor</p>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown('<div class="hologram-title">SENTINEL // GATE</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">CHRIST // UNIVERSITY — COMPLIANCE MONITOR v3.1</div>', unsafe_allow_html=True)
 
 # --- Session State Initialization ---
 if "engine" not in st.session_state:
-    with st.spinner("Initializing AI Models, OCR Engine, and Database..."):
+    with st.spinner("INITIATING CORE AI // OCR // DATABASE SYNC..."):
         st.session_state.engine = ComplianceEngine()
 
 if "audit_log" not in st.session_state:
     st.session_state.audit_log = [
-        {"Time": "08:30:12", "Gate": "Main Gate 1", "Reg No": "2582401", "Status": "COMPLIANT", "Reason": "Valid ID"},
-        {"Time": "08:35:45", "Gate": "Main Gate 1", "Reg No": "2582402", "Status": "NON-COMPLIANT", "Reason": "No ID Badge Detected"},
-        {"Time": "08:42:01", "Gate": "Main Gate 1", "Reg No": "2582405", "Status": "COMPLIANT", "Reason": "Valid ID"},
+        {"Time": "08:30:12", "Gate": "Gamma-1", "Reg No": "2582401", "Status": "COMPLIANT", "Reason": "System.ID.Valid"},
+        {"Time": "08:35:45", "Gate": "Gamma-1", "Reg No": "2582402", "Status": "NON-COMPLIANT", "Reason": "Error.ID.BadgeMissing"},
+        {"Time": "08:42:01", "Gate": "Gamma-1", "Reg No": "2582405", "Status": "COMPLIANT", "Reason": "System.ID.Valid"},
     ]
 
 engine = st.session_state.engine
 
-# --- Top Real-Time Metrics ---
-m1, m2, m3, m4 = st.columns(4)
-total_scans = len(st.session_state.audit_log)
-non_compliant_count = sum(1 for log in st.session_state.audit_log if log["Status"] == "NON-COMPLIANT")
+# --- Top Real-Time HUD Metrics ---
+with st.container():
+    m1, m2, m3, m4 = st.columns(4)
+    total_scans = len(st.session_state.audit_log)
+    non_compliant_count = sum(1 for log in st.session_state.audit_log if log["Status"] == "NON-COMPLIANT")
 
-with m1:
-    st.metric(label="📍 Gate Location", value="Main Gate - Entry A")
-with m2:
-    st.metric(label="📊 Total Scans Today", value=total_scans)
-with m3:
-    st.metric(label="⚠️ Non-Compliance Flags", value=non_compliant_count, delta=f"{non_compliant_count} flags", delta_color="inverse")
-with m4:
-    st.metric(label="🔊 Audio Accessibility", value="Enabled")
+    with m1: st.metric(label="📍 ACTIVE NODE", value="Gamma Gate - A")
+    with m2: st.metric(label="📊 TOTAL CYCLES", value=total_scans)
+    with m3: st.metric(label="⚠️ VIO FLAGS", value=non_compliant_count)
+    with m4: st.metric(label="🌐 UPLINK STATUS", value="SECURE")
 
 st.divider()
 
 # --- Sidebar Controls ---
-st.sidebar.title("🎮 Gate Operations")
+st.sidebar.title("SECURITY PROTOCOLS")
 
 input_mode = st.sidebar.radio(
-    "Select Camera Input Mode",
-    ["🔴 Live Webcam Stream", "📁 Sample / Upload ID Card"]
+    "Select Input Matrix",
+    ["🔴 Live Neural Feed", "📁 Static Data Stream"]
 )
 
 campus_gate = st.sidebar.selectbox(
-    "Active Gate Location",
-    ["Main Gate 1 (Pedestrian)", "Gate 2 (Vehicular)", "Library Entrance", "Hostel Block 1"]
+    "Active Node Location",
+    ["Pedestrian Node Gamma-1", "Vehicular Node Beta-2", "Library Databank", "Hostel Grid Alpha"]
 )
 
-enable_audio = st.sidebar.checkbox("🔊 Enable Audio Voice Alerts", value=True)
+enable_audio = st.sidebar.checkbox("🔊 Enable Vocoder Feedback", value=True)
 
-# --- Main Content Area ---
-tab_scan, tab_analytics = st.tabs(["🎥 Gate Scanner", "📈 Live Compliance Analytics"])
+# --- Main Content Area (Scanner Panel) ---
+col1, col2 = st.columns([1.2, 1])
 
-with tab_scan:
-    col1, col2 = st.columns([1.2, 1])
+image_to_process = None
 
-    image_to_process = None
+with col1:
+    with st.container():
+        st.subheader("📷 NEURAL STREAM // GAMMA-1")
 
-    with col1:
-        st.subheader("📷 Camera Stream")
-
-        if input_mode == "🔴 Live Webcam Stream":
-            st.info("Point camera at student ID card or face.")
+        if input_mode == "🔴 Live Neural Feed":
+            st.caption("Awaiting Student Identification Matrix...")
             run_feed = st.checkbox("Turn On Webcam", value=False)
             camera_placeholder = st.empty()
             
             if run_feed:
                 cap = cv2.VideoCapture(0)
-                scan_now = st.button("📸 Capture & Scan Frame", type="primary", use_container_width=True)
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) # Force HD capture
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+                
+                scan_now = st.button("📸 CAPTURE MATRIX", type="primary", use_container_width=True)
                 
                 while cap.isOpened() and run_feed and not scan_now:
                     ret, frame = cap.read()
-                    if not ret:
-                        st.error("Failed to access webcam.")
-                        break
+                    if not ret: break
                     
                     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    # HUD overlay simulated (simple border)
+                    cv2.rectangle(frame_rgb, (10,10), (1270, 710), (254, 242, 0), 2) # Cyan border
+
                     camera_placeholder.image(frame_rgb, channels="RGB", use_column_width=True)
-                    time.sleep(0.03)
+                    time.sleep(0.01)
 
                 if scan_now and cap.isOpened():
                     ret, frame = cap.read()
                     cap.release()
                     if ret:
-                        temp_filename = os.path.join(OUTPUTS_DIR, f"webcam_{uuid.uuid4().hex[:6]}.jpg")
+                        temp_filename = os.path.join(OUTPUTS_DIR, f"cap_{uuid.uuid4().hex[:6]}.jpg")
                         cv2.imwrite(temp_filename, frame)
                         image_to_process = temp_filename
-                        st.success("Frame Captured Successfully!")
 
-        else: # Sample / Upload Mode
+        else: # Upload / Sample Mode
+            st.caption("Upload static identification data stream.")
             sample_files = sorted(glob.glob(os.path.join(SAMPLE_CARDS_DIR, "*.png")))
             choice = st.selectbox("Select Sample ID Card", sample_files, format_func=lambda p: os.path.basename(p)) if sample_files else None
-            uploaded = st.file_uploader("Or Upload Image", type=["png", "jpg", "jpeg"])
+            uploaded = st.file_uploader("Or Upload Static Image", type=["png", "jpg", "jpeg"])
 
             if uploaded is not None:
                 tmp_path = os.path.join(OUTPUTS_DIR, f"{uuid.uuid4().hex[:6]}_{uploaded.name}")
@@ -184,31 +272,40 @@ with tab_scan:
                 image_to_process = choice
 
             if image_to_process:
-                st.image(image_to_process, caption="Selected Image Source", use_column_width=True)
-                trigger_scan = st.button("▶ Trigger Gate Scan", type="primary", use_container_width=True)
+                # Add cyan glow to image display
+                st.markdown(
+                    f'<div style="border: 2px solid #00f2fe; box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); border-radius: 5px; overflow: hidden;">',
+                    unsafe_allow_html=True
+                )
+                st.image(image_to_process, caption="Data Stream Source", use_column_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                trigger_scan = st.button("▶ PROCESS CYCLE", type="primary", use_container_width=True)
 
-    with col2:
-        st.subheader("🔍 Real-Time Compliance Results")
+with col2:
+    with st.container():
+        st.subheader("🔍 NEURAL ANALYSIS RESULT")
 
-        should_process = (input_mode == "🔴 Live Webcam Stream" and image_to_process is not None) or \
-                         (input_mode != "🔴 Live Webcam Stream" and 'trigger_scan' in locals() and trigger_scan)
+        should_process = (input_mode == "🔴 Live Neural Feed" and image_to_process is not None) or \
+                         (input_mode != "🔴 Live Neural Feed" and 'trigger_scan' in locals() and trigger_scan)
 
         if should_process and image_to_process:
-            with st.spinner("Processing OCR → Verifying Student ID → AI Incident Audit..."):
+            with st.spinner("CYBERNETIC_ANALYSIS_IN_PROGRESS..."):
                 result = engine.process_frame(image_to_process)
 
             now_str = datetime.datetime.now().strftime("%H:%M:%S")
 
             if result.get("compliant", False):
-                st.markdown('<div class="status-granted">✅ ACCESS GRANTED</div>', unsafe_allow_html=True)
+                st.success(f"### ACCESS_GRANTED // Node:{campus_gate}")
                 st.markdown(f"""
-                * **Student Name:** `{result.get('name', 'N/A')}`
-                * **Register No:** `{result.get('reg_no', 'N/A')}`
-                * **Department:** `{result.get('department', 'N/A')}`
+                ---
+                > Student.ID: `{result.get('name', 'N/A')}`  
+                > Registry.No: `{result.get('reg_no', 'N/A')}`  
+                > Sector.Dept: `{result.get('department', 'N/A')}`  
+                > Time.Cycle: `{now_str}`  
                 """)
 
                 if enable_audio:
-                    speak_alert(f"Access Granted. Welcome {result.get('name', 'Student')}")
+                    speak_alert(f"Cycle Complete. Student {result.get('name', 'Student')} Identified. Access Granted.")
 
                 st.session_state.audit_log.insert(0, {
                     "Time": now_str,
@@ -219,47 +316,35 @@ with tab_scan:
                 })
 
             else:
-                st.markdown('<div class="status-denied">🚫 ACCESS DENIED</div>', unsafe_allow_html=True)
-                st.error(f"**Reason:** {result.get('reason', 'ID Card Not Detected / Invalid')}")
+                st.error(f"### ACCESS_DENIED // Node:{campus_gate}")
+                st.markdown(f"**Violation Detected:** Sector Rule Alpha-3: ID Card Missing/Invalid.")
+                st.markdown(f"**Registry ID:** `{result.get('reg_no', 'System.Unknown')}`")
 
                 if enable_audio:
-                    speak_alert("Access Denied. Compliance Violation Detected.")
+                    speak_alert("Error. Access Denied. Sector Violation Detected.")
 
                 st.session_state.audit_log.insert(0, {
                     "Time": now_str,
                     "Gate": campus_gate,
                     "Reg No": result.get('reg_no', 'Unknown'),
                     "Status": "NON-COMPLIANT",
-                    "Reason": result.get('reason', 'Violation')
+                    "Reason": result.get('reason', 'ID Card Error')
                 })
 
-                with st.expander("📝 AI Incident Report", expanded=True):
-                    st.info(result.get("report_text", "No detailed report generated."))
+                with st.expander("📝 AI PROTOCOL REPORT", expanded=True):
+                    st.info(result.get("report_text", "No cyber-report generated."))
 
         else:
-            st.info("👈 Turn on camera and click **Capture & Scan Frame** (or select a file) to process compliance.")
+            st.info("👈 Activate Neural Feed and click **CAPTURE MATRIX** (or stream data) to process identification cycle.")
 
-# --- Analytics Tab ---
-with tab_analytics:
-    st.subheader("📊 Dynamic Gate Activity Insights")
+# --- Cycle Log (Analytics HUD Panel) ---
+st.divider()
+with st.container():
+    st.subheader("📋 SECURE NODE // LOG HISTORY")
     df = pd.DataFrame(st.session_state.audit_log)
-
-    if not df.empty:
-        chart_col1, chart_col2 = st.columns(2)
-
-        with chart_col1:
-            st.markdown("### Compliance Ratio")
-            fig_pie = px.pie(
-                df, names="Status", title="Today's Gate Scans Breakdown",
-                color="Status", color_discrete_map={"COMPLIANT": "#28a745", "NON-COMPLIANT": "#dc3545"}
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-        with chart_col2:
-            st.markdown("### Recent Scans Log")
-            st.dataframe(df, use_container_width=True, height=300)
-    else:
-        st.caption("No log data available yet.")
+    
+    # Simple dark theme data display
+    st.dataframe(df, use_container_width=True)
 
 st.divider()
-st.caption("🔒 **CHRIST Security System** | Gate Compliance & Accessibility Engine")
+st.caption("🔒 **CHRIST SENTINEL** | Internal Campus Neural Monitoring v3.1 | Gamma Node")
