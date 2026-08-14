@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.env
+models/*.pt
+models/*.onnx
+outputs/reports/*.txt
+outputs/alerts/*.png
+!outputs/reports/.gitkeep
+!outputs/alerts/.gitkeep
+data/sample_id_cards/*.png
+!data/sample_id_cards/.gitkeep
+.DS_Store
+.ipynb_checkpoints/
+*.log

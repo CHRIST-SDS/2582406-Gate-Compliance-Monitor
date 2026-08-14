@@ -1,0 +1,22 @@
+# --- Core ---
+streamlit==1.38.0
+opencv-python==4.10.0.84
+numpy==1.26.4
+pandas==2.2.2
+Pillow==10.4.0
+
+# --- Detection & OCR (local, no cloud) ---
+ultralytics==8.2.103        # YOLOv8 for ID card detection
+easyocr==1.7.1               # local OCR
+
+# --- Local LLM client (talks to Ollama running on localhost) ---
+requests==2.32.3
+ollama==0.3.3
+
+# --- Local Stable Diffusion client (talks to AUTOMATIC1111 API on localhost) ---
+# No extra package needed — uses `requests` to call the local WebUI API
+# (http://127.0.0.1:7860). Alternative: swap image_alert.py to call ComfyUI.
+
+# --- Utilities ---
+python-dotenv==1.0.1
+faker==26.0.0                 # generates dummy student/library data
