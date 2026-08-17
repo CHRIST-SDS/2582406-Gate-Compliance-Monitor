@@ -1,350 +1,320 @@
-"""
-🎓 CHRIST (Deemed to be University)
-🛡️ SENTINEL - Automated Gate Compliance Interface
-
-[FUTURISTIC HUD EDITION]
-
-Run:
-    streamlit run app.py
-"""
-
 import os
-import glob
-import uuid
 import time
-import datetime
+import tempfile
 import cv2
+import numpy as np
 import pandas as pd
-import plotly.express as px
 import streamlit as st
+from datetime import datetime
 
-from src.compliance_engine import ComplianceEngine
-
-# --- Page & HUD Setup ---
+# --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="SENTINEL // Gate Monitor",
-    page_icon="🛡️",
+    page_title="Gate Compliance Monitor | Christ University",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SAMPLE_CARDS_DIR = os.path.join(BASE_DIR, "data", "sample_id_cards")
-OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
-os.makedirs(OUTPUTS_DIR, exist_ok=True)
+LOGO_PATH = "christ_logo.png"
 
-# =========================================================
-# --- Advanced CSS Injection for Futuristic HUD Theme ---
-# =========================================================
-st.markdown(f"""
+# --- INITIALIZE SESSION LOGS ---
+if "audit_logs" not in st.session_state:
+    st.session_state.audit_logs = []
+
+# --- CUSTOM ACADEMIC PORTAL STYLING ---
+st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
-
-    /* --- Core Page Overrides --- */
-    .stApp {{
-        background: radial-gradient(circle, #10192a 0%, #060912 100%);
-        color: #e0f2fe;
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-    }}
-    
-    /* Permanent Scanline Overlay Effect */
-    .stApp::before {{
-        content: " ";
-        display: block;
-        position: absolute;
-        top: 0; left: 0; bottom: 0; right: 0;
-        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-        background-size: 100% 4px, 3px 100%;
-        z-idex: 2;
-        pointer-events: none;
-        opacity: 0.3;
-    }}
-
-    /* --- Glowing Sidebar --- */
-    [data-testid="stSidebar"] {{
-        background-color: #04060b;
-        border-right: 2px solid #00f2fe;
-        box-shadow: 5px 0px 15px rgba(0, 242, 254, 0.2);
-    }}
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {{
-        color: #00f2fe;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        text-shadow: 0 0 10px #00f2fe;
-    }}
-
-    /* --- HUD Styling for Content Panels (Glassmorphism + Neon) --- */
-    [data-testid="stVerticalBlock"] > div > div[data-testid="stVerticalBlock"] {{
-        background: rgba(16, 25, 42, 0.5);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(0, 242, 254, 0.3);
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
-    }}
-
-    /* --- Status Highlighting --- */
-    .stAlert {{
-        background-color: rgba(6, 9, 18, 0.8) !important;
-        border-radius: 5px !important;
-        font-family: 'JetBrains Mono', monospace !important;
-    }}
-    /* Access Granted (Green Luminous) */
-    .stAlert[data-baseweb="notification"] > div:first-child {{
-        border: 2px solid #0f0;
-        box-shadow: 0 0 10px #0f0;
-        color: #0f0;
-        background-color: rgba(0, 50, 0, 0.5);
-    }}
-    /* Access Denied (Red Luminous) */
-    .stAlert[data-baseweb="notification"][class*="st-emotion-cache"] > div:first-child {{
-        border: 2px solid #f00;
-        box-shadow: 0 0 10px #f00;
-        color: #f00;
-        background-color: rgba(50, 0, 0, 0.5);
-    }}
-
-    /* --- Futurisitc Buttons --- */
-    .stButton > button {{
-        background: transparent !important;
-        color: #00f2fe !important;
-        border: 2px solid #00f2fe !important;
-        border-radius: 5px !important;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.3s ease;
-        box-shadow: 0 0 5px rgba(0, 242, 254, 0.5);
-    }}
-    .stButton > button:hover {{
-        background: #00f2fe !important;
-        color: #060912 !important;
-        box-shadow: 0 0 20px #00f2fe;
-    }}
-
-    /* --- Header Title (Holographic Glitch Effect) --- */
-    .hologram-title {{
-        color: #fff;
-        font-size: 3rem;
-        font-weight: bold;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 4px;
-        position: relative;
-        text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe, 0 0 30px #00f2fe;
-        animation: glitch 3s infinite;
-    }}
-    .sub-title {{
-        color: #00f2fe;
-        text-align: center;
-        font-size: 1rem;
-        margin-top: -10px;
-        margin-bottom: 30px;
-        opacity: 0.8;
-    }}
-
-    @keyframes glitch {{
-        0% {{ text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe; }}
-        2% {{ text-shadow: 2px 0 red, -2px 0 blue; }}
-        4% {{ text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe; }}
-        98% {{ text-shadow: 0 0 10px #fff, 0 0 20px #00f2fe; }}
-        100% {{ text-shadow: -2px 0 red, 2px 0 blue; }}
-    }}
+    .stApp {
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+    .portal-card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .step-box {
+        background-color: #f1f5f9;
+        border-left: 4px solid #1e3a8a;
+        padding: 10px 14px;
+        border-radius: 4px;
+        margin: 5px 0;
+        font-size: 0.88rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# Audio Text-to-Speech Helper (Retained for accessibility)
-def speak_alert(text):
-    clean_text = text.replace("'", "").replace('"', '')
-    js_code = f"""
-        <script>
-            var msg = new SpeechSynthesisUtterance('{clean_text}');
-            msg.rate = 0.9; // Slightly slower, more bureaucratic voice
-            window.speechSynthesis.speak(msg);
-        </script>
-    """
-    st.components.v1.html(js_code, height=0)
+# --- MOCK STUDENT DATABASE ---
+MOCK_STUDENT_DB = {
+    "2347101": {
+        "name": "Nitheesh V",
+        "department": "Data Science & Analytics",
+        "card_status": "Active",
+        "books_issued": 2,
+        "pending_dues": 0
+    },
+    "2347102": {
+        "name": "Ananya Sharma",
+        "department": "Computer Science",
+        "card_status": "Active",
+        "books_issued": 1,
+        "pending_dues": 150
+    },
+    "2347103": {
+        "name": "Rohan Verma",
+        "department": "Commerce & Management",
+        "card_status": "Suspended",
+        "books_issued": 0,
+        "pending_dues": 500
+    }
+}
 
-# =========================================================
-# --- Main Interface Content (HUD Panels) ---
-# =========================================================
-
-# --- Header Banner ---
-st.markdown('<div class="hologram-title">SENTINEL // GATE</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">CHRIST // UNIVERSITY — COMPLIANCE MONITOR v3.1</div>', unsafe_allow_html=True)
-
-# --- Session State Initialization ---
-if "engine" not in st.session_state:
-    with st.spinner("INITIATING CORE AI // OCR // DATABASE SYNC..."):
-        st.session_state.engine = ComplianceEngine()
-
-if "audit_log" not in st.session_state:
-    st.session_state.audit_log = [
-        {"Time": "08:30:12", "Gate": "Gamma-1", "Reg No": "2582401", "Status": "COMPLIANT", "Reason": "System.ID.Valid"},
-        {"Time": "08:35:45", "Gate": "Gamma-1", "Reg No": "2582402", "Status": "NON-COMPLIANT", "Reason": "Error.ID.BadgeMissing"},
-        {"Time": "08:42:01", "Gate": "Gamma-1", "Reg No": "2582405", "Status": "COMPLIANT", "Reason": "System.ID.Valid"},
-    ]
-
-engine = st.session_state.engine
-
-# --- Top Real-Time HUD Metrics ---
-with st.container():
-    m1, m2, m3, m4 = st.columns(4)
-    total_scans = len(st.session_state.audit_log)
-    non_compliant_count = sum(1 for log in st.session_state.audit_log if log["Status"] == "NON-COMPLIANT")
-
-    with m1: st.metric(label="📍 ACTIVE NODE", value="Gamma Gate - A")
-    with m2: st.metric(label="📊 TOTAL CYCLES", value=total_scans)
-    with m3: st.metric(label="⚠️ VIO FLAGS", value=non_compliant_count)
-    with m4: st.metric(label="🌐 UPLINK STATUS", value="SECURE")
-
-st.divider()
-
-# --- Sidebar Controls ---
-st.sidebar.title("SECURITY PROTOCOLS")
-
-input_mode = st.sidebar.radio(
-    "Select Input Matrix",
-    ["🔴 Live Neural Feed", "📁 Static Data Stream"]
-)
-
-campus_gate = st.sidebar.selectbox(
-    "Active Node Location",
-    ["Pedestrian Node Gamma-1", "Vehicular Node Beta-2", "Library Databank", "Hostel Grid Alpha"]
-)
-
-enable_audio = st.sidebar.checkbox("🔊 Enable Vocoder Feedback", value=True)
-
-# --- Main Content Area (Scanner Panel) ---
-col1, col2 = st.columns([1.2, 1])
-
-image_to_process = None
-
-with col1:
-    with st.container():
-        st.subheader("📷 NEURAL STREAM // GAMMA-1")
-
-        if input_mode == "🔴 Live Neural Feed":
-            st.caption("Awaiting Student Identification Matrix...")
-            run_feed = st.checkbox("Turn On Webcam", value=False)
-            camera_placeholder = st.empty()
-            
-            if run_feed:
-                cap = cv2.VideoCapture(0)
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) # Force HD capture
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-                
-                scan_now = st.button("📸 CAPTURE MATRIX", type="primary", use_container_width=True)
-                
-                while cap.isOpened() and run_feed and not scan_now:
-                    ret, frame = cap.read()
-                    if not ret: break
-                    
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    # HUD overlay simulated (simple border)
-                    cv2.rectangle(frame_rgb, (10,10), (1270, 710), (254, 242, 0), 2) # Cyan border
-
-                    camera_placeholder.image(frame_rgb, channels="RGB", use_column_width=True)
-                    time.sleep(0.01)
-
-                if scan_now and cap.isOpened():
-                    ret, frame = cap.read()
-                    cap.release()
-                    if ret:
-                        temp_filename = os.path.join(OUTPUTS_DIR, f"cap_{uuid.uuid4().hex[:6]}.jpg")
-                        cv2.imwrite(temp_filename, frame)
-                        image_to_process = temp_filename
-
-        else: # Upload / Sample Mode
-            st.caption("Upload static identification data stream.")
-            sample_files = sorted(glob.glob(os.path.join(SAMPLE_CARDS_DIR, "*.png")))
-            choice = st.selectbox("Select Sample ID Card", sample_files, format_func=lambda p: os.path.basename(p)) if sample_files else None
-            uploaded = st.file_uploader("Or Upload Static Image", type=["png", "jpg", "jpeg"])
-
-            if uploaded is not None:
-                tmp_path = os.path.join(OUTPUTS_DIR, f"{uuid.uuid4().hex[:6]}_{uploaded.name}")
-                with open(tmp_path, "wb") as f:
-                    f.write(uploaded.getbuffer())
-                image_to_process = tmp_path
-            elif choice:
-                image_to_process = choice
-
-            if image_to_process:
-                # Add cyan glow to image display
-                st.markdown(
-                    f'<div style="border: 2px solid #00f2fe; box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); border-radius: 5px; overflow: hidden;">',
-                    unsafe_allow_html=True
-                )
-                st.image(image_to_process, caption="Data Stream Source", use_column_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-                trigger_scan = st.button("▶ PROCESS CYCLE", type="primary", use_container_width=True)
-
-with col2:
-    with st.container():
-        st.subheader("🔍 NEURAL ANALYSIS RESULT")
-
-        should_process = (input_mode == "🔴 Live Neural Feed" and image_to_process is not None) or \
-                         (input_mode != "🔴 Live Neural Feed" and 'trigger_scan' in locals() and trigger_scan)
-
-        if should_process and image_to_process:
-            with st.spinner("CYBERNETIC_ANALYSIS_IN_PROGRESS..."):
-                result = engine.process_frame(image_to_process)
-
-            now_str = datetime.datetime.now().strftime("%H:%M:%S")
-
-            if result.get("compliant", False):
-                st.success(f"### ACCESS_GRANTED // Node:{campus_gate}")
-                st.markdown(f"""
-                ---
-                > Student.ID: `{result.get('name', 'N/A')}`  
-                > Registry.No: `{result.get('reg_no', 'N/A')}`  
-                > Sector.Dept: `{result.get('department', 'N/A')}`  
-                > Time.Cycle: `{now_str}`  
-                """)
-
-                if enable_audio:
-                    speak_alert(f"Cycle Complete. Student {result.get('name', 'Student')} Identified. Access Granted.")
-
-                st.session_state.audit_log.insert(0, {
-                    "Time": now_str,
-                    "Gate": campus_gate,
-                    "Reg No": result.get('reg_no', 'N/A'),
-                    "Status": "COMPLIANT",
-                    "Reason": "Valid Identification"
-                })
-
-            else:
-                st.error(f"### ACCESS_DENIED // Node:{campus_gate}")
-                st.markdown(f"**Violation Detected:** Sector Rule Alpha-3: ID Card Missing/Invalid.")
-                st.markdown(f"**Registry ID:** `{result.get('reg_no', 'System.Unknown')}`")
-
-                if enable_audio:
-                    speak_alert("Error. Access Denied. Sector Violation Detected.")
-
-                st.session_state.audit_log.insert(0, {
-                    "Time": now_str,
-                    "Gate": campus_gate,
-                    "Reg No": result.get('reg_no', 'Unknown'),
-                    "Status": "NON-COMPLIANT",
-                    "Reason": result.get('reason', 'ID Card Error')
-                })
-
-                with st.expander("📝 AI PROTOCOL REPORT", expanded=True):
-                    st.info(result.get("report_text", "No cyber-report generated."))
-
-        else:
-            st.info("👈 Activate Neural Feed and click **CAPTURE MATRIX** (or stream data) to process identification cycle.")
-
-# --- Cycle Log (Analytics HUD Panel) ---
-st.divider()
-with st.container():
-    st.subheader("📋 SECURE NODE // LOG HISTORY")
-    df = pd.DataFrame(st.session_state.audit_log)
+def verify_gate_compliance(frame, mock_reg_no="2347101"):
+    card_detected = True  # Mock card presence flag
     
-    # Simple dark theme data display
-    st.dataframe(df, use_container_width=True)
+    if card_detected:
+        student_info = MOCK_STUDENT_DB.get(mock_reg_no)
+        if student_info and student_info["card_status"] == "Active":
+            return {
+                "compliant": True,
+                "reg_no": mock_reg_no,
+                "library_record": student_info
+            }
+        else:
+            return {
+                "compliant": False,
+                "reg_no": mock_reg_no,
+                "reason": "Inactive or Suspended Student Account",
+                "library_record": student_info
+            }
+    else:
+        return {
+            "compliant": False,
+            "reg_no": "Unknown",
+            "reason": "ID Card Not Detected / Unreadable"
+        }
+
+# --- SIDEBAR ---
+with st.sidebar:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, use_column_width=True)
+    else:
+        st.warning("christ_logo.png missing from root directory.")
+    
+    st.markdown("### Surveillance Control")
+    mode = st.radio(
+        "Scan Mode:",
+        ["Live Camera Snapshot", "Video Feed Upload"],
+        help="Choose between webcam snapshot inspection or offline surveillance video analysis."
+    )
+    
+    st.divider()
+    
+    # --- AUDIT LOG DOWNLOAD BUTTON ---
+    st.markdown("### Export Audit Data")
+    if st.session_state.audit_logs:
+        df_logs = pd.DataFrame(st.session_state.audit_logs)
+        csv_data = df_logs.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download Audit Log (CSV)",
+            data=csv_data,
+            file_name=f"gate_audit_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+    else:
+        st.caption("No scan records generated yet.")
+
+    st.divider()
+    st.info("Demo Mode Active: Bounding box detection runs on mock mode. Swap card_detected with best.pt YOLOv8 weights for live model inference.")
+
+# --- MAIN HEADER ---
+col_head1, col_head2 = st.columns([4, 1.5])
+with col_head1:
+    st.title("Gate Compliance & Library Access Monitor")
+    st.caption("Automated visual ID verification, surveillance compliance auditing, and real-time library database synchronization.")
+
+with col_head2:
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, use_column_width=True)
+
+# --- SYSTEM WORKFLOW GUIDE ---
+with st.expander("System Overview & Workflow Guide", expanded=False):
+    st.markdown("The automated gate surveillance engine operates in four steps:")
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown("""
+        <div class="step-box">
+            <b>1. Frame Capture</b><br>
+            <span style="color:#64748b;">Ingests visual input via webcam snapshot or video stream.</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
+        <div class="step-box">
+            <b>2. ID Detection</b><br>
+            <span style="color:#64748b;">Identifies student ID card presence within the frame.</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown("""
+        <div class="step-box">
+            <b>3. Database Verification</b><br>
+            <span style="color:#64748b;">Cross-checks registration ID with active student records.</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with c4:
+        st.markdown("""
+        <div class="step-box">
+            <b>4. Access Decision</b><br>
+            <span style="color:#64748b;">Grants campus entry or flags compliance non-adherence.</span>
+        </div>
+        """, unsafe_allow_html=True)
 
 st.divider()
-st.caption("🔒 **CHRIST SENTINEL** | Internal Campus Neural Monitoring v3.1 | Gamma Node")
+
+# --- DYNAMIC IN-PLACE METRICS CONTAINER ---
+metrics_placeholder = st.empty()
+
+def render_metrics(scanned, compliant, flagged):
+    with metrics_placeholder.container():
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Total Scanned", scanned, help="Total frames or snapshots processed")
+        m2.metric("Compliant Access", compliant, help="Verified active students granted entry")
+        m3.metric("Flagged Violations", flagged, help="Unrecognized or suspended accounts blocked")
+
+total_scanned = len(st.session_state.audit_logs)
+compliant_count = sum(1 for log in st.session_state.audit_logs if log["Status"] == "COMPLIANT / GRANTED")
+flagged_count = sum(1 for log in st.session_state.audit_logs if log["Status"] == "FLAGGED / DENIED")
+
+render_metrics(total_scanned, compliant_count, flagged_count)
+
+col_stream, col_status = st.columns([3.2, 2])
+
+with col_status:
+    st.subheader("Real-Time Access Audit")
+    status_card = st.empty()
+    details_card = st.empty()
+
+# --- MODE 1: LIVE CAMERA SNAPSHOT ---
+if mode == "Live Camera Snapshot":
+    with col_stream:
+        st.subheader("Webcam Inspection Station")
+        img_file_buffer = st.camera_input("Position student ID card toward camera")
+
+    if img_file_buffer is not None:
+        bytes_data = img_file_buffer.getvalue()
+        cv_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+
+        result = verify_gate_compliance(cv_img, mock_reg_no="2347101")
+        reg_no = result.get("reg_no", "Unknown")
+        is_compliant = result.get("compliant", False)
+        lib_data = result.get("library_record", {})
+
+        st.session_state.audit_logs.append({
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Scan Mode": "Webcam",
+            "Registration No": reg_no,
+            "Student Name": lib_data.get("name", "N/A"),
+            "Department": lib_data.get("department", "N/A"),
+            "Status": "COMPLIANT / GRANTED" if is_compliant else "FLAGGED / DENIED",
+            "Violation Reason": "None" if is_compliant else result.get("reason", "Unknown")
+        })
+
+        if is_compliant:
+            status_card.success(f"ACCESS GRANTED | Reg No: **{reg_no}**")
+            details_card.json({
+                "Student Name": lib_data.get("name", "N/A"),
+                "Department": lib_data.get("department", "N/A"),
+                "Library Card Status": lib_data.get("card_status", "Active"),
+                "Books Issued": lib_data.get("books_issued", 0),
+                "Pending Dues": f"₹{lib_data.get('pending_dues', 0)}"
+            })
+        else:
+            status_card.error(f"ACCESS DENIED | Reg No: **{reg_no}**")
+            details_card.warning(f"**Violation Reason:** {result.get('reason', 'ID Card Not Found / Inactive Account')}")
+
+        total_scanned = len(st.session_state.audit_logs)
+        compliant_count = sum(1 for log in st.session_state.audit_logs if log["Status"] == "COMPLIANT / GRANTED")
+        flagged_count = sum(1 for log in st.session_state.audit_logs if log["Status"] == "FLAGGED / DENIED")
+        render_metrics(total_scanned, compliant_count, flagged_count)
+
+# --- MODE 2: VIDEO FEED UPLOAD ---
+else:
+    with col_stream:
+        st.subheader("CCTV Video Stream Audit")
+        uploaded_video = st.file_uploader("Upload gate surveillance video (.mp4, .avi, .mov)", type=["mp4", "avi", "mov"])
+        start_scan = st.button("Start Video Scan", type="primary")
+        frame_placeholder = st.empty()
+
+    if uploaded_video is not None and start_scan:
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+        tfile.write(uploaded_video.read())
+        tfile.close()
+        video_path = tfile.name
+
+        cap = cv2.VideoCapture(video_path)
+        frame_rate_skip = 30
+        frame_idx = 0
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            frame_idx += 1
+            if frame_idx % frame_rate_skip != 0:
+                continue
+
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_placeholder.image(frame_rgb, channels="RGB", use_column_width=True)
+
+            mock_id = "2347101" if (len(st.session_state.audit_logs) + 1) % 2 != 0 else "2347103"
+            result = verify_gate_compliance(frame, mock_reg_no=mock_id)
+            
+            reg_no = result.get("reg_no", "Unknown")
+            is_compliant = result.get("compliant", False)
+            lib_data = result.get("library_record", {})
+
+            st.session_state.audit_logs.append({
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Scan Mode": "Video Stream",
+                "Registration No": reg_no,
+                "Student Name": lib_data.get("name", "N/A"),
+                "Department": lib_data.get("department", "N/A"),
+                "Status": "COMPLIANT / GRANTED" if is_compliant else "FLAGGED / DENIED",
+                "Violation Reason": "None" if is_compliant else result.get("reason", "Unknown")
+            })
+
+            if is_compliant:
+                status_card.success(f"ACCESS GRANTED | Reg No: **{reg_no}**")
+                details_card.json({
+                    "Student Name": lib_data.get("name", "N/A"),
+                    "Department": lib_data.get("department", "N/A"),
+                    "Library Card Status": lib_data.get("card_status", "Active"),
+                    "Books Issued": lib_data.get("books_issued", 0),
+                    "Pending Dues": f"₹{lib_data.get('pending_dues', 0)}"
+                })
+            else:
+                status_card.error(f"ACCESS DENIED | Reg No: **{reg_no}**")
+                details_card.warning(f"**Violation Reason:** {result.get('reason', 'ID Card Not Found / Inactive Account')}")
+
+            total_scanned = len(st.session_state.audit_logs)
+            compliant_count = sum(1 for log in st.session_state.audit_logs if log["Status"] == "COMPLIANT / GRANTED")
+            flagged_count = sum(1 for log in st.session_state.audit_logs if log["Status"] == "FLAGGED / DENIED")
+            render_metrics(total_scanned, compliant_count, flagged_count)
+
+            time.sleep(1.0)
+
+        cap.release()
+        
+        try:
+            if os.path.exists(video_path):
+                os.remove(video_path)
+        except Exception:
+            pass
+
+    else:
+        frame_placeholder.info("Upload a surveillance video file above and click **Start Video Scan** to begin live analysis.")
