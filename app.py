@@ -46,54 +46,88 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOCK STUDENT DATABASE ---
+# --- EXPANDED ENROLLMENT DATABASE ---
 MOCK_STUDENT_DB = {
     "2347101": {
         "name": "Nitheesh V",
         "department": "Data Science & Analytics",
-        "card_status": "Active",
-        "books_issued": 2,
-        "pending_dues": 0
+        "enrollment_status": "Active Student"
     },
     "2347102": {
         "name": "Ananya Sharma",
         "department": "Computer Science",
-        "card_status": "Active",
-        "books_issued": 1,
-        "pending_dues": 150
+        "enrollment_status": "Active Student"
     },
     "2347103": {
         "name": "Rohan Verma",
         "department": "Commerce & Management",
-        "card_status": "Suspended",
-        "books_issued": 0,
-        "pending_dues": 500
+        "enrollment_status": "Suspended"
+    },
+    "2347104": {
+        "name": "Kavya Nair",
+        "department": "School of Law",
+        "enrollment_status": "Active Student"
+    },
+    "2347105": {
+        "name": "Rahul Menon",
+        "department": "Psychology & Social Work",
+        "enrollment_status": "Inactive / Graduated"
+    },
+    "2347106": {
+        "name": "Priyanka Das",
+        "department": "Economics & Finance",
+        "enrollment_status": "Active Student"
+    },
+    "2347107": {
+        "name": "Arjan Singh",
+        "department": "Mechanical Engineering",
+        "enrollment_status": "Suspended"
+    },
+    "2347108": {
+        "name": "Sneha Hegde",
+        "department": "Media Studies",
+        "enrollment_status": "Active Student"
+    },
+    "2347109": {
+        "name": "Vikramaditya Rao",
+        "department": "Business Administration",
+        "enrollment_status": "Active Student"
+    },
+    "2347110": {
+        "name": "Fatima Khan",
+        "department": "Data Science & Analytics",
+        "enrollment_status": "Active Student"
     }
 }
 
-def verify_gate_compliance(frame, mock_reg_no="2347101"):
-    card_detected = True  # Mock card presence flag
+def verify_gate_compliance(frame, mock_reg_no):
+    """
+    Verifies if student is wearing/presenting an ID card and validates
+    their current enrollment status in the university database.
+    """
+    card_detected = True  # Mock ID card detection flag
     
     if card_detected:
         student_info = MOCK_STUDENT_DB.get(mock_reg_no)
-        if student_info and student_info["card_status"] == "Active":
+        if student_info and student_info["enrollment_status"] == "Active Student":
             return {
                 "compliant": True,
                 "reg_no": mock_reg_no,
-                "library_record": student_info
+                "student_record": student_info
             }
         else:
+            status_reason = student_info["enrollment_status"] if student_info else "Record Not Found"
             return {
                 "compliant": False,
                 "reg_no": mock_reg_no,
-                "reason": "Inactive or Suspended Student Account",
-                "library_record": student_info
+                "reason": f"Non-Active Student ({status_reason})",
+                "student_record": student_info if student_info else {}
             }
     else:
         return {
             "compliant": False,
             "reg_no": "Unknown",
-            "reason": "ID Card Not Detected / Unreadable"
+            "reason": "ID Card Not Detected / Student Not Wearing ID"
         }
 
 # --- SIDEBAR ---
@@ -133,8 +167,8 @@ with st.sidebar:
 # --- MAIN HEADER ---
 col_head1, col_head2 = st.columns([4, 1.5])
 with col_head1:
-    st.title("Gate Compliance & Library Access Monitor")
-    st.caption("Automated visual ID verification, surveillance compliance auditing, and real-time library database synchronization.")
+    st.title("Gate Compliance & ID Verification Monitor")
+    st.caption("Automated ID card detection and real-time university enrollment status verification.")
 
 with col_head2:
     if os.path.exists(LOGO_PATH):
@@ -147,29 +181,29 @@ with st.expander("System Overview & Workflow Guide", expanded=False):
     with c1:
         st.markdown("""
         <div class="step-box">
-            <b>1. Frame Capture</b><br>
-            <span style="color:#64748b;">Ingests visual input via webcam snapshot or video stream.</span>
+            <b>1. Visual Capture</b><br>
+            <span style="color:#64748b;">Ingests feed via webcam snapshot or video stream.</span>
         </div>
         """, unsafe_allow_html=True)
     with c2:
         st.markdown("""
         <div class="step-box">
-            <b>2. ID Detection</b><br>
-            <span style="color:#64748b;">Identifies student ID card presence within the frame.</span>
+            <b>2. ID Card Detection</b><br>
+            <span style="color:#64748b;">Scans frame to verify if the student is wearing/presenting an ID.</span>
         </div>
         """, unsafe_allow_html=True)
     with c3:
         st.markdown("""
         <div class="step-box">
-            <b>3. Database Verification</b><br>
-            <span style="color:#64748b;">Cross-checks registration ID with active student records.</span>
+            <b>3. Enrollment Lookup</b><br>
+            <span style="color:#64748b;">Checks student ID against database to confirm current enrollment.</span>
         </div>
         """, unsafe_allow_html=True)
     with c4:
         st.markdown("""
         <div class="step-box">
-            <b>4. Access Decision</b><br>
-            <span style="color:#64748b;">Grants campus entry or flags compliance non-adherence.</span>
+            <b>4. Gate Decision</b><br>
+            <span style="color:#64748b;">Grants campus access or flags non-compliant individuals.</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -182,8 +216,8 @@ def render_metrics(scanned, compliant, flagged):
     with metrics_placeholder.container():
         m1, m2, m3 = st.columns(3)
         m1.metric("Total Scanned", scanned, help="Total frames or snapshots processed")
-        m2.metric("Compliant Access", compliant, help="Verified active students granted entry")
-        m3.metric("Flagged Violations", flagged, help="Unrecognized or suspended accounts blocked")
+        m2.metric("Compliant Access", compliant, help="Verified active students wearing ID card")
+        m3.metric("Flagged Violations", flagged, help="Missing ID cards or inactive enrollment records")
 
 total_scanned = len(st.session_state.audit_logs)
 compliant_count = sum(1 for log in st.session_state.audit_logs if log["Status"] == "COMPLIANT / GRANTED")
@@ -202,23 +236,29 @@ with col_status:
 if mode == "Live Camera Snapshot":
     with col_stream:
         st.subheader("Webcam Inspection Station")
+        selected_student = st.selectbox(
+            "Select Student Profile for Camera Scan Simulation:",
+            options=list(MOCK_STUDENT_DB.keys()),
+            format_func=lambda x: f"{x} - {MOCK_STUDENT_DB[x]['name']} ({MOCK_STUDENT_DB[x]['department']})"
+        )
         img_file_buffer = st.camera_input("Position student ID card toward camera")
 
     if img_file_buffer is not None:
         bytes_data = img_file_buffer.getvalue()
         cv_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
 
-        result = verify_gate_compliance(cv_img, mock_reg_no="2347101")
+        result = verify_gate_compliance(cv_img, mock_reg_no=selected_student)
         reg_no = result.get("reg_no", "Unknown")
         is_compliant = result.get("compliant", False)
-        lib_data = result.get("library_record", {})
+        student_data = result.get("student_record", {})
 
         st.session_state.audit_logs.append({
             "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Scan Mode": "Webcam",
             "Registration No": reg_no,
-            "Student Name": lib_data.get("name", "N/A"),
-            "Department": lib_data.get("department", "N/A"),
+            "Student Name": student_data.get("name", "N/A"),
+            "Department": student_data.get("department", "N/A"),
+            "Enrollment Status": student_data.get("enrollment_status", "N/A"),
             "Status": "COMPLIANT / GRANTED" if is_compliant else "FLAGGED / DENIED",
             "Violation Reason": "None" if is_compliant else result.get("reason", "Unknown")
         })
@@ -226,11 +266,11 @@ if mode == "Live Camera Snapshot":
         if is_compliant:
             status_card.success(f"ACCESS GRANTED | Reg No: **{reg_no}**")
             details_card.json({
-                "Student Name": lib_data.get("name", "N/A"),
-                "Department": lib_data.get("department", "N/A"),
-                "Library Card Status": lib_data.get("card_status", "Active"),
-                "Books Issued": lib_data.get("books_issued", 0),
-                "Pending Dues": f"₹{lib_data.get('pending_dues', 0)}"
+                "Student Name": student_data.get("name", "N/A"),
+                "Department": student_data.get("department", "N/A"),
+                "Enrollment Status": student_data.get("enrollment_status", "N/A"),
+                "ID Card Detected": "Yes",
+                "Campus Entry": "Authorized"
             })
         else:
             status_card.error(f"ACCESS DENIED | Reg No: **{reg_no}**")
@@ -258,6 +298,7 @@ else:
         cap = cv2.VideoCapture(video_path)
         frame_rate_skip = 30
         frame_idx = 0
+        db_keys = list(MOCK_STUDENT_DB.keys())
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -271,19 +312,20 @@ else:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_placeholder.image(frame_rgb, channels="RGB", use_column_width=True)
 
-            mock_id = "2347101" if (len(st.session_state.audit_logs) + 1) % 2 != 0 else "2347103"
-            result = verify_gate_compliance(frame, mock_reg_no=mock_id)
+            simulated_reg_no = db_keys[(len(st.session_state.audit_logs)) % len(db_keys)]
+            result = verify_gate_compliance(frame, mock_reg_no=simulated_reg_no)
             
             reg_no = result.get("reg_no", "Unknown")
             is_compliant = result.get("compliant", False)
-            lib_data = result.get("library_record", {})
+            student_data = result.get("student_record", {})
 
             st.session_state.audit_logs.append({
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Scan Mode": "Video Stream",
                 "Registration No": reg_no,
-                "Student Name": lib_data.get("name", "N/A"),
-                "Department": lib_data.get("department", "N/A"),
+                "Student Name": student_data.get("name", "N/A"),
+                "Department": student_data.get("department", "N/A"),
+                "Enrollment Status": student_data.get("enrollment_status", "N/A"),
                 "Status": "COMPLIANT / GRANTED" if is_compliant else "FLAGGED / DENIED",
                 "Violation Reason": "None" if is_compliant else result.get("reason", "Unknown")
             })
@@ -291,11 +333,11 @@ else:
             if is_compliant:
                 status_card.success(f"ACCESS GRANTED | Reg No: **{reg_no}**")
                 details_card.json({
-                    "Student Name": lib_data.get("name", "N/A"),
-                    "Department": lib_data.get("department", "N/A"),
-                    "Library Card Status": lib_data.get("card_status", "Active"),
-                    "Books Issued": lib_data.get("books_issued", 0),
-                    "Pending Dues": f"₹{lib_data.get('pending_dues', 0)}"
+                    "Student Name": student_data.get("name", "N/A"),
+                    "Department": student_data.get("department", "N/A"),
+                    "Enrollment Status": student_data.get("enrollment_status", "N/A"),
+                    "ID Card Detected": "Yes",
+                    "Campus Entry": "Authorized"
                 })
             else:
                 status_card.error(f"ACCESS DENIED | Reg No: **{reg_no}**")
