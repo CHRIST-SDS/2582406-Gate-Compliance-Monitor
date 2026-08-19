@@ -16,14 +16,14 @@ Per course constraints, the entire pipeline runs **locally**: no cloud AI APIs (
 
 ## Features
 
-- 🪪 **Automatic ID card detection** from a gate-camera frame (YOLOv8, local)
-- 🔤 **OCR extraction** of registration number / name from the detected card (EasyOCR, local)
-- 🔁 **Live sync** against the existing library system's profile export (CSV → SQLite)
-- ✅ / 🚫 **Compliance decision** — active & valid vs. expired / unregistered / inactive
-- 📝 **Local LLM incident reports** — Ollama (Llama 3 / Mistral) drafts a short, professional report the moment a non-compliant entry is detected
-- 🖼️ **Local image generation alerts** — Stable Diffusion (AUTOMATIC1111 / ComfyUI) generates a visual warning graphic for every flagged entry, combining **text and image generation in a single workflow**
-- 📊 **Streamlit dashboard** to simulate gate scans and view results live
-- 🧪 **Fully runnable demo mode** — synthetic library data + ID card images included, with graceful fallbacks if Ollama/Stable Diffusion aren't running, so the whole pipeline works even before those services are set up
+- **Automatic ID card detection** from a gate-camera frame (YOLOv8, local)
+- **OCR extraction** of registration number / name from the detected card (EasyOCR, local)
+- **Live sync** against the existing library system's profile export (CSV → SQLite)
+- **Compliance decision** — active & valid vs. expired / unregistered / inactive
+- **Local LLM incident reports** — Ollama (Llama 3 / Mistral) drafts a short, professional report the moment a non-compliant entry is detected
+- **Local image generation alerts** — Stable Diffusion (AUTOMATIC1111 / ComfyUI) generates a visual warning graphic for every flagged entry, combining **text and image generation in a single workflow**
+- **Streamlit dashboard** to simulate gate scans and view results live
+- **Fully runnable demo mode** — synthetic library data + ID card images included, with graceful fallbacks if Ollama/Stable Diffusion aren't running, so the whole pipeline works even before those services are set up
 
 ---
 
